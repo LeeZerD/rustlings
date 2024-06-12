@@ -1,12 +1,5 @@
-// threads3.rs
-//
-// Execute `rustlings hint threads3` or use the `hint` watch subcommand for a
-// hint.
-
-// I AM NOT DONE
-
 use std::sync::mpsc;
-use std::sync::Arc;
+use std::sync::Arc;  // Utilisé pour permettre le partage de données entre plusieurs threads de manière sécurisée
 use std::thread;
 use std::time::Duration;
 
@@ -27,18 +20,29 @@ impl Queue {
 }
 
 fn send_tx(q: Queue, tx: mpsc::Sender<u32>) -> () {
+
+    let qc = Arc::new(q);  // Cration d'un Arc autour de Queue
+
+    let qc1 = Arc::clone(&qc);  // clonage Arc pour le premier thread
+    let qc2 = Arc::clone(&qc);  // clonage arc pour le deuxième threa
+
+    // Clonage de l'émetteur pour le premier thread
+    let tx1 = tx.clone();  
+
+    // Création du premier thread pour envoyer les valeurs de la première moitié
     thread::spawn(move || {
-        for val in q.first_half {
+        for val in &qc1.first_half {  // Utilise qc1 pour accéder à la première moitié
             println!("sending {:?}", val);
-            tx.send(val).unwrap();
+            tx1.send(*val).unwrap();  // Envoie la valeur via le Sender cloné
             thread::sleep(Duration::from_secs(1));
         }
     });
 
+    // Création du deuxième thread pour envoyer les valeurs de la deuxième moitié
     thread::spawn(move || {
-        for val in q.second_half {
+        for val in &qc2.second_half {  // Utilise qc2 pour accéder à la deuxième moitié
             println!("sending {:?}", val);
-            tx.send(val).unwrap();
+            tx.send(*val).unwrap();  // Envoie la valeur via le Sender original
             thread::sleep(Duration::from_secs(1));
         }
     });
@@ -61,3 +65,4 @@ fn main() {
     println!("total numbers received: {}", total_received);
     assert_eq!(total_received, queue_length)
 }
+
